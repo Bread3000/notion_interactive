@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prawo Odbicia Światła</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        #simulation-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        svg {
+            border: 1px solid #ccc;
+            background-color: #eef; /* Lekko niebieskawe tło dla lepszego kontrastu */
+            margin-top: 15px;
+            display: block; /* Zapobiega dodatkowemu marginesowi pod SVG */
+            margin-left: auto;
+            margin-right: auto;
+        }
+        line {
+            stroke-linecap: round;
+        }
+        #surface {
+            stroke: #555;
+            stroke-width: 3;
+        }
+        #normal {
+            stroke: #888;
+            stroke-width: 1.5;
+            stroke-dasharray: 5, 5;
+        }
+        #incident-ray {
+            stroke: #ff4500; /* Pomarańczowo-czerwony */
+            stroke-width: 2.5;
+        }
+        #reflected-ray {
+            stroke: #1e90ff; /* Niebieski */
+            stroke-width: 2.5;
+        }
+        text {
+            font-size: 14px;
+            fill: #333;
+        }
+        .angle-text {
+             font-weight: bold;
+        }
+        #angle-alpha-text {
+            fill: #ff4500;
+        }
+        #angle-beta-text {
+            fill: #1e90ff;
+        }
+        label {
+            margin-right: 10px;
+            font-size: 1.1em;
+        }
+        input[type="range"] {
+            width: 250px;
+            cursor: pointer;
+        }
+        #controls {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #angle-display {
+            margin-left: 15px;
+            font-size: 1.1em;
+            min-width: 150px; /* Aby zapobiec przesuwaniu się layoutu */
+            text-align: left;
+        }
+        h1 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        p {
+            margin-top: 0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="simulation-container">
+        <h1>Prawo Odbicia Światła</h1>
+        <p>Kąt padania (α) jest równy kątowi odbicia (β).</p>
+
+        <svg id="reflection-svg" width="400" height="300">
+            <defs>
+                <!-- Definicja grotu strzałki -->
+                <marker id="arrowhead-incident" markerWidth="10" markerHeight="7"
+                refX="8" refY="3.5" orient="auto" markerUnits="strokeWidth">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#ff4500" />
+                </marker>
+                 <marker id="arrowhead-reflected" markerWidth="10" markerHeight="7"
+                refX="8" refY="3.5" orient="auto" markerUnits="strokeWidth">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#1e90ff" />
+                </marker>
+            </defs>
+
+            <!-- Powierzchnia odbijająca -->
+            <line id="surface" x1="50" y1="250" x2="350" y2="250" />
+            <text x="355" y="255" font-size="12px" fill="#555">Powierzchnia</text>
+
+            <!-- Normalna -->
+            <line id="normal" x1="200" y1="250" x2="200" y2="50" />
+            <text x="205" y="45" font-size="12px" fill="#888">Normalna</text>
+
+            <!-- Promień padający -->
+            <line id="incident-ray" x1="50" y1="50" x2="200" y2="250" marker-end="url(#arrowhead-incident)" />
+            <text id="incident-label" x="100" y="140" font-size="12px" fill="#ff4500" transform="rotate(0 200 250)">Promień padający</text>
+
+
+            <!-- Promień odbity -->
+            <line id="reflected-ray" x1="200" y1="250" x2="350" y2="50" marker-end="url(#arrowhead-reflected)" />
+             <text id="reflected-label" x="280" y="140" font-size="12px" fill="#1e90ff" transform="rotate(0 200 250)">Promień odbity</text>
+
+            <!-- Tekst kątów -->
+            <text id="angle-alpha-text" class="angle-text" x="180" y="200">α = 0°</text>
+            <text id="angle-beta-text" class="angle-text" x="210" y="200">β = 0°</text>
+
+            <!-- Łuki reprezentujące kąty (opcjonalnie) -->
+             <path id="angle-alpha-arc" d="M 200 250" fill="none" stroke="#ff4500" stroke-width="1"/>
+             <path id="angle-beta-arc" d="M 200 250" fill="none" stroke="#1e90ff" stroke-width="1"/>
+
+        </svg>
+
+        <div id="controls">
+            <label for="angle-slider">Kąt padania (α):</label>
+            <input type="range" id="angle-slider" min="0" max="85" value="45" step="1">
+            <span id="angle-display">α = 45°, β = 45°</span>
+        </div>
+         <p style="margin-top: 15px; font-weight: bold; font-size: 1.2em;">α = β</p>
+    </div>
+
+    <script>
+        const slider = document.getElementById('angle-slider');
+        const angleDisplay = document.getElementById('angle-display');
+        const incidentRay = document.getElementById('incident-ray');
+        const reflectedRay = document.getElementById('reflected-ray');
+        const incidentLabel = document.getElementById('incident-label');
+        const reflectedLabel = document.getElementById('reflected-label');
+        const angleAlphaText = document.getElementById('angle-alpha-text');
+        const angleBetaText = document.getElementById('angle-beta-text');
+        const angleAlphaArc = document.getElementById('angle-alpha-arc');
+        const angleBetaArc = document.getElementById('angle-beta-arc');
+        const normal = document.getElementById('normal');
+
+        const svg = document.getElementById('reflection-svg');
+        const svgWidth = svg.getAttribute('width');
+        const svgHeight = svg.getAttribute('height');
+
+        // Punkt padania (środek dolnej krawędzi normalnej)
+        const incidencePoint = { x: 200, y: 250 };
+        const rayLength = 180; // Długość promieni
+        const normalEndY = parseFloat(normal.getAttribute('y2')); // Górny koniec normalnej
+
+        function updateReflection(angleDegrees) {
+            const angleRadians = angleDegrees * Math.PI / 180;
+
+            // Kąt padania (α) jest mierzony od normalnej
+            // Kąt w SVG liczymy od osi X, normalna jest pionowa (kąt -90° lub 270°)
+
+            // Współrzędne końca promienia padającego
+            // Kąt od normalnej w lewo -> kąt od osi X = 270° + alpha
+            // W SVG Y rośnie w dół, więc używamy sin/cos inaczej lub odwracamy kąty
+            // Prościej: liczymy od normalnej (pionowej linii w dół)
+            // Względem pionowej linii w GÓRĘ:
+            // Kąt padający: -angleRadians (zgodnie ze wskazówkami zegara)
+            // Kąt odbity: +angleRadians (przeciwnie do wskazówek zegara)
+
+            const incidentEndX = incidencePoint.x - rayLength * Math.sin(angleRadians);
+            const incidentEndY = incidencePoint.y - rayLength * Math.cos(angleRadians);
+
+            const reflectedEndX = incidencePoint.x + rayLength * Math.sin(angleRadians);
+            const reflectedEndY = incidencePoint.y - rayLength * Math.cos(angleRadians);
+
+            // Aktualizacja promieni
+            incidentRay.setAttribute('x1', incidentEndX);
+            incidentRay.setAttribute('y1', incidentEndY);
+            incidentRay.setAttribute('x2', incidencePoint.x);
+            incidentRay.setAttribute('y2', incidencePoint.y);
+
+            reflectedRay.setAttribute('x1', incidencePoint.x);
+            reflectedRay.setAttribute('y1', incidencePoint.y);
+            reflectedRay.setAttribute('x2', reflectedEndX);
+            reflectedRay.setAttribute('y2', reflectedEndY);
+
+             // Aktualizacja etykiet (obrót dla lepszego dopasowania) - uproszczone pozycjonowanie
+            const incidentMidX = (incidentEndX + incidencePoint.x) / 2;
+            const incidentMidY = (incidentEndY + incidencePoint.y) / 2;
+            const reflectedMidX = (reflectedEndX + incidencePoint.x) / 2;
+            const reflectedMidY = (reflectedEndY + incidencePoint.y) / 2;
+
+            // Proste pozycjonowanie etykiet, bez skomplikowanego obrotu
+            incidentLabel.setAttribute('x', incidentMidX - 50); // Dostosuj offsety
+            incidentLabel.setAttribute('y', incidentMidY);
+            reflectedLabel.setAttribute('x', reflectedMidX + 10); // Dostosuj offsety
+            reflectedLabel.setAttribute('y', reflectedMidY);
+
+
+            // Aktualizacja wyświetlania kątów
+            const angleText = `α = ${angleDegrees}°, β = ${angleDegrees}°`;
+            angleDisplay.textContent = angleText;
+            angleAlphaText.textContent = `α = ${angleDegrees}°`;
+            angleBetaText.textContent = `β = ${angleDegrees}°`;
+
+            // Pozycjonowanie tekstu kątów blisko normalnej
+            const textOffset = 45; // Odległość od punktu padania wzdłuż normalnej
+            const textAngleSpread = 15; // Rozsunięcie tekstów na boki
+            angleAlphaText.setAttribute('x', incidencePoint.x - textAngleSpread - (angleDegrees/2)); // Lekkie rozsunięcie zależne od kąta
+            angleAlphaText.setAttribute('y', incidencePoint.y - textOffset + (angleDegrees/3));
+            angleBetaText.setAttribute('x', incidencePoint.x + textAngleSpread);
+             angleBetaText.setAttribute('y', incidencePoint.y - textOffset + (angleDegrees/3));
+
+
+            // Aktualizacja łuków kątów
+            const arcRadius = 30;
+             // Łuk alfa: od normalnej (kąt -90) do promienia padającego (kąt -90 - alfa)
+            const startAngleAlpha = -Math.PI / 2; // Normalna (w górę)
+            const endAngleAlpha = startAngleAlpha - angleRadians;
+            const startXAlpha = incidencePoint.x + arcRadius * Math.cos(startAngleAlpha);
+            const startYAlpha = incidencePoint.y + arcRadius * Math.sin(startAngleAlpha);
+            const endXAlpha = incidencePoint.x + arcRadius * Math.cos(endAngleAlpha);
+            const endYAlpha = incidencePoint.y + arcRadius * Math.sin(endAngleAlpha);
+            const largeArcFlagAlpha = angleDegrees > 180 ? 1 : 0; // W naszym przypadku zawsze 0
+            const sweepFlagAlpha = 0; // Kierunek rysowania łuku (zgodnie z zegarem)
+
+            angleAlphaArc.setAttribute('d', `M ${startXAlpha} ${startYAlpha} A ${arcRadius} ${arcRadius} 0 ${largeArcFlagAlpha} ${sweepFlagAlpha} ${endXAlpha} ${endYAlpha}`);
+
+            // Łuk beta: od promienia odbitego (kąt -90 + alfa) do normalnej (kąt -90)
+            const startAngleBeta = -Math.PI/2; // Normalna
+            const endAngleBeta = startAngleBeta + angleRadians;
+            const startXBeta = incidencePoint.x + arcRadius * Math.cos(startAngleBeta);
+            const startYBeta = incidencePoint.y + arcRadius * Math.sin(startAngleBeta);
+            const endXBeta = incidencePoint.x + arcRadius * Math.cos(endAngleBeta);
+            const endYBeta = incidencePoint.y + arcRadius * Math.sin(endAngleBeta);
+            const largeArcFlagBeta = angleDegrees > 180 ? 1 : 0; // Zawsze 0
+            const sweepFlagBeta = 1; // Kierunek rysowania łuku (przeciwnie do zegara)
+
+             angleBetaArc.setAttribute('d', `M ${startXBeta} ${startYBeta} A ${arcRadius} ${arcRadius} 0 ${largeArcFlagBeta} ${sweepFlagBeta} ${endXBeta} ${endYBeta}`);
+
+        }
+
+        // Event listener dla suwaka
+        slider.addEventListener('input', (event) => {
+            updateReflection(event.target.value);
+        });
+
+        // Inicjalizacja przy załadowaniu strony
+        updateReflection(slider.value);
+
+    </script>
+
+</body>
+</html>
